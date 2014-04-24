@@ -244,6 +244,7 @@ sub noDepency {
 
 sub isExecutable {
 	my $cmdline = shift;
+	return unless ($cmdline);
 	my $cmd = $cmdline;
 
 	if ($cmdline =~ /\s/) {
