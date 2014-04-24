@@ -109,6 +109,8 @@ combination. Example job will be run only once a day at 0:00 midnight
  interval = 86400
  period = hr {12am} min {0}
 
+See also man B<Time::Period>
+
 =item watch
 
 Kubjas is monitoring file system events with linux inotify API if

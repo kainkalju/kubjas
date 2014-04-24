@@ -348,11 +348,15 @@ for (@cfg_files) {
 			my $val = $cfg->val($sec, $key);
 			$job->set_param($key, $val) if ($val);
 		}
-		if (&isExecutable($job->get_param('cmdline'))) {
-			push @jobs, $job;
-		} else {
-			printf "cannot execute [%s] %s\n", $job->get_param('name'), $job->get_param('cmdline');
+		if (inPeriod(time(), $job->get_param('period')) < 0) {
+			printf "incorrect period [%s] %s\n", $job->get_param('name'), $job->get_param('period');
+			next;
 		}
+		unless (&isExecutable($job->get_param('cmdline'))) {
+			printf "cannot execute [%s] %s\n", $job->get_param('name'), $job->get_param('cmdline');
+			next;
+		}
+		push @jobs, $job;
 	}
 }
 
