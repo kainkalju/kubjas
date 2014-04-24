@@ -241,6 +241,23 @@ sub noDepency {
 	return $dependecy;
 }
 
+sub isExecutable {
+	my $cmdline = shift;
+	my $cmd = $cmdline;
+
+	if ($cmdline =~ /\s/) {
+		($cmd) = split(/\s/,$cmdline);
+	}
+	if ( -x $cmd ) {
+		return 1;
+	}
+	for (split(/:/, $ENV{'PATH'})) {
+		if ( -x "$_/$cmd" ) {
+			return 1;
+		}
+	}
+}
+
 sub whoami {
 	my $hostname;
 	open FILE, "/proc/sys/kernel/hostname";
@@ -330,10 +347,10 @@ for (@cfg_files) {
 			my $val = $cfg->val($sec, $key);
 			$job->set_param($key, $val) if ($val);
 		}
-		if (! -x $job->get_param('cmdline') ) {
-			printf "cannot execute [%s] %s\n", $job->get_param('name'), $job->get_param('cmdline');
-		} else {
+		if (&isExecutable($job->get_param('cmdline'))) {
 			push @jobs, $job;
+		} else {
+			printf "cannot execute [%s] %s\n", $job->get_param('name'), $job->get_param('cmdline');
 		}
 	}
 }

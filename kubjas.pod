@@ -50,6 +50,10 @@ her own config file.
  conflicts = date-job
  user = nobody
 
+=item job-name
+
+[job-name] is the INI file section. Job names must be unique.
+
 =back
 
 =cut
