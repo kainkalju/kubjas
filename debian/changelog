@@ -1,3 +1,10 @@
+kubjas (0.3) unstable; urgency=low
+
+  * added manpage period desc
+  * added period check
+
+ -- Kain Kalju <kain@flycom.ee>  Thu, 24 Apr 2014 22:18:05 +0300
+
 kubjas (0.2) unstable; urgency=low
 
   * First production release.

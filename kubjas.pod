@@ -14,7 +14,7 @@ Measurements are in microseconds resolution.
 Kubjas configuration is standard INI file format. You can have multiple
 configuration files at same time. Main configuration is B</etc/kubjas.conf>
 and B</etc/kubjas.d/> is for additional configuratsions. Each job can have
-her own config file.
+her own config file. You can force configuration reload with B<HUP> signal.
 
 =over
 
