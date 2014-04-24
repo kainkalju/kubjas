@@ -367,10 +367,6 @@ sub exec_job {
 		return;
 	}
 	my $gid = getgrnam($user);
-	if (!$gid && $user ne 'root') {
-		print "cannot find group for user $user\n";
-		return;
-	}
 	my $pid;
 	defined($pid = fork) or die "Can't fork: $!";
 	return $pid if ($pid);

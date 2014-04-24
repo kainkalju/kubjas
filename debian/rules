@@ -11,3 +11,11 @@
 
 %:
 	dh $@ 
+
+override_dh_installman:
+	pod2man kubjas.pod >kubjas.1
+	dh_installman kubjas.1
+
+override_dh_clean:
+	dh_clean
+	rm -f kubjas.1

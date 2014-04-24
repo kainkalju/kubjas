@@ -1,0 +1,55 @@
+=pod
+
+=head1 Kubjas
+
+Kubjas is periodic job scheduler that operates with minimum 1 second intervals.
+
+Kubjas is not another cron daemon. Kubjas does not start programs at certain
+time but at specified intervals. Kubjas also includes B<Time::Period> filter.
+You can configure B<interval> and B<period> combinations that act like crontab.
+
+Kubjas measures executed job running times and log at job exits. Measurements
+are in microseconds resolution.
+
+Kubjas configuration is standard INI file format. You can have multiple
+configuration files at same time. Main configuration is B</etc/kubjas.conf>
+and B</etc/kubjas.d/> is for additional configuratsion. Each job can have
+her own config file.
+
+=over
+
+=item example.conf
+
+ [date-job]
+ cmdline = /usr/local/bin/date.sh
+ run = periodic
+ interval = 60
+ period = wd {1 3 5 7} min {0-29}, wd {2 4 6} min {30-59}
+ user = nobody
+ notify = 192.168.108.227:catch-signals
+
+ [catch-signals]
+ cmdline = /usr/local/bin/catch-signals.pl
+ run = daemon
+ interval = stop-message
+ signal = USR2
+ user = nobody
+
+ [readfile]
+ cmdline = /usr/local/bin/readfile.sh
+ interval = onchange
+ watch = /var/tmp/date.txt
+ watch = /tmp/date.txt
+ run = periodic
+ user = nobody
+
+ [very-shy-job]
+ cmdline = /usr/local/bin/shy.sh
+ interval = 10
+ depends = catch-signals
+ conflicts = date-job
+ user = nobody
+
+=back
+
+=cut
