@@ -182,7 +182,7 @@ sub start_jobs {
 		next if ($watch && lc($interval) ne 'onchange');
 		next if (!$watch && lc($interval) eq 'onchange');
 		next if ($notify && lc($interval) ne $msg[0]);
-		next if (!$notify && $interval !~ /\d/ && $job->get_param('run') ne 'daemon');
+		next if (!$watch && !$notify && $interval !~ /\d/ && $job->get_param('run') ne 'daemon');
 		next if ($time && $interval =~ /\d/ && ($time - $started{$name}) < $interval);
 		next if ($time && $interval =~ /\d/ && ($time - $start_time) < $interval);
 
