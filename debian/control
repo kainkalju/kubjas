@@ -1,0 +1,12 @@
+Source: kubjas
+Section: admin
+Priority: extra
+Maintainer: Kain Kalju <kain@flycom.ee>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.2
+
+Package: kubjas
+Architecture: all
+Depends: ${misc:Depends}, libconfig-inifiles-perl, libtime-period-perl, liblinux-inotify2-perl
+Description: process scheduling daemon
+ Kubjas is a background process that runs particular programs at particular intervals

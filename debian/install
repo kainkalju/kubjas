@@ -1,0 +1,3 @@
+kubjas.pl	usr/sbin
+examples/kubjas.conf	etc
+examples/kubjas.d	etc
