@@ -1,3 +1,9 @@
+kubjas (0.4) unstable; urgency=low
+
+  * added group param
+
+ -- Kain Kalju <kain@flycom.ee>  Thu, 24 Apr 2014 23:06:53 +0300
+
 kubjas (0.3) unstable; urgency=low
 
   * added manpage period desc

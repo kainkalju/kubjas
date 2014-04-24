@@ -26,6 +26,7 @@ her own config file. You can force configuration reload with B<HUP> signal.
  interval = 60
  period = wd {1 3 5 7} min {0-29}, wd {2 4 6} min {30-59}
  user = nobody
+ group = nogroup
  notify = 192.168.108.227:catch-signals
 
  [catch-signals]
@@ -33,7 +34,6 @@ her own config file. You can force configuration reload with B<HUP> signal.
  run = daemon
  interval = stop-message
  signal = USR2
- user = nobody
 
  [readfile]
  cmdline = /usr/local/bin/readfile.sh
@@ -42,13 +42,13 @@ her own config file. You can force configuration reload with B<HUP> signal.
  watch = /tmp/date.txt
  run = periodic
  user = nobody
+ group = nogroup
 
  [very-shy-job]
  cmdline = /usr/local/bin/shy.sh
  interval = 10
  depends = catch-signals
  conflicts = date-job
- user = nobody
 
 =item job-name
 
@@ -69,6 +69,10 @@ Secure way is usage of full path names :-)
 =item user
 
 Run jobs as given user. Kubjas resolves user UID
+
+=item group
+
+Run jobs as given group. Kubjas resolves group GID.
 
 =item run
 
@@ -106,7 +110,7 @@ Period is optional param.
 Theoretically you can emulate B<crontab> with B<interval> and B<period>
 combination. Example job will be run only once a day at 0:00 midnight
 
- interval = 86400
+ interval = 60
  period = hr {12am} min {0}
 
 See also man B<Time::Period>. A sub-period is of the form
@@ -140,7 +144,7 @@ crontab comparison [2]
 
  0 0 * * * 7  cmdline
 
- interval = 90
+ interval = 60
  period = wd {su} hr {12am} min {0}
 
 or

@@ -198,8 +198,9 @@ sub start_jobs {
 		unless ($running{$name}) {
 			my $pid = &exec_job(
 				$job->get_param('cmdline'),
+				$job->get_param('run'),
 				$job->get_param('user'),
-				$job->get_param('run')
+				$job->get_param('group')
 			);
 			if ($pid) {
 				print scalar(localtime), "  EXEC [$name] PID $pid\n";
@@ -380,27 +381,29 @@ return @jobs;
 
 sub exec_job {
 	my $cmdline = shift;
+	my $run = shift;
 	my $user = shift;
-	my $daemon = shift;
+	my $group = shift;
 	unless ($user) { $user = 'root'; }
 	my $uid = getpwnam($user);
 	if (!$uid && $user ne 'root') {
 		print "cannot find user $user\n";
 		return;
 	}
-	my $gid = getgrnam($user);
+	unless ($group) { $group = $user; }
+	my $gid = getgrnam($group);
 	my $pid;
 	defined($pid = fork) or die "Can't fork: $!";
 	return $pid if ($pid);
 	chdir '/' or die "Can't chdir to /: $!";
 	open STDIN, '/dev/null' or die "Can't read /dev/null: $!";
-	if ($daemon eq 'daemon') {
+	if ($run eq 'daemon') {
 		open STDOUT, '>/dev/null' or die "Can't write to /dev/null: $!";
 	}
 	setsid or die "Can't start a new session: $!";
 	open STDERR, '>&STDOUT' or die "Can't dup stdout: $!";
-	$<=$>=$uid;
 	$(=$)=$gid;
+	$<=$>=$uid;
 	{ exec ($cmdline) }; print STDERR "couldn't exec $cmdline: $!";
 }
 
@@ -416,6 +419,7 @@ sub new {
 		'name' => undef,
 		'cmdline' => undef,
 		'user' => 'root', # start job with user permissions
+		'group' => 'root', # start job with group permissions
 		'interval' => 0, # seconds | onchange | start-message | stop-message
 		'period' => 'mo {1-12}', # man Time::Period
 		'conflicts' => undef, # other job names \n separated array
