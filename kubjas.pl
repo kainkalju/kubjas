@@ -37,7 +37,7 @@ $SIG{CHLD} = sub {
 	while( ( my $child = waitpid( -1, &WNOHANG ) ) > 0 ) {
 		my $name = $childs{$child};
 		if ($name) {
-			printf "%s  PID %d exited [%s] running time %s.", scalar(localtime), $child, $name, &elapsed_time($started{$name},$stms{$name});
+			printf "%s  PID %d exited [%s] running time %s.\n", scalar(localtime), $child, $name, &elapsed_time($started{$name},$stms{$name});
 			delete $running{$name};
 			delete $childs{$child};
 			if ($stop_notify{$name}) {
@@ -46,7 +46,6 @@ $SIG{CHLD} = sub {
 				}
 			}
 		}
-		print "\n";
 	}
 };
 $SIG{HUP} = \&reading_conf;
