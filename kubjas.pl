@@ -171,6 +171,7 @@ sub start_jobs {
 
 	foreach my $job (@jobs) {
 		my $name = $job->get_param('name');
+		my $daemon = $job->get_param('run') eq 'daemon' ? 'daemon' : 0;
 
 		next if ($notify && $notify ne $name);
 		next unless (inPeriod(time(), $job->get_param('period')));
@@ -180,14 +181,14 @@ sub start_jobs {
 		my $interval = $job->get_param('interval');
 		next unless ($interval);
 		next if ($watch && lc($interval) ne 'onchange');
-		next if (!$watch && lc($interval) eq 'onchange');
+		next if (!$watch && lc($interval) eq 'onchange' && !$daemon);
 		next if ($notify && lc($interval) ne $msg[0]);
-		next if (!$watch && !$notify && $interval !~ /\d/ && $job->get_param('run') ne 'daemon');
+		next if (!$watch && !$notify && $interval !~ /\d/ && !$daemon);
 		next if ($time && $interval =~ /\d/ && ($time - $started{$name}) < $interval);
 		next if ($time && $interval =~ /\d/ && ($time - $start_time) < $interval);
 
 		my $signal = $job->get_param('signal');
-		if ($signal && $notify && $running{$name}) {
+		if ($signal && ($notify || $watch) && $running{$name}) {
 			if ($signal =~ /^\d+$/) {
 				kill $signal, $running{$name};
 			} else {

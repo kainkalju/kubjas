@@ -1,6 +1,6 @@
 =pod
 
-=head1 Kubjas
+=head1 KUBJAS
 
 Kubjas is periodic job scheduler that operates with minimum 1 second intervals.
 
@@ -54,6 +54,135 @@ her own config file.
 
 [job-name] is the INI file section. Job names must be unique.
 
+=item cmdline
+
+Parameter B<cmdline> determines executable programm with parameters
+
+ cmdline = perl /usr/local/bin/catch-signals.pl
+ cmdline = catch-signals.pl
+
+these lines are equivalent if PATH environment variable 
+includes /usr/local/bin and /usr/bin
+
+Secure way is usage of full path names :-)
+
+=item user
+
+Run jobs as given user. Kubjas resolves user UID
+
+=item run
+
+Allowable values are B<periodic> or B<daemon>. The main differences are
+the way they are treated. Daemon jobs cannot print any output to STDOUT
+or STDERR - the link between kubjas STDOUT and daemon is breaked.
+Daemon jobs are started with kubjas and will be restarted any time they
+exited. Kubjas will kill all daemon jobs at shutdown (restarts).
+
+Periodic jobs STDOUT and STDERR output will be printed to kubjas logfile.
+All running periodic jobs will run background until the end then kubjas
+stops. Kubjas does not kill them.
+
+=item interval
+
+Specifies time in seconds between job last start. It is the minumum
+delay between the different runs. Actual delay may be longer if other
+conditions prevent running.
+
+There are also three special intervals that activated only by outside
+events: B<onchange>, B<start-message>, B<stop-message>
+
+onchange works with B<watch> parameter. see B<watch>
+
+start-message and stop-message will trigger job executing then notify
+message arrives. see B<notify>
+
+=item period
+
+Parameter determines if a given time falls within a given period.
+Kubjas execute job only if period is met.
+
+Period is optional param.
+
+Theoretically you can emulate B<crontab> with B<interval> and B<period>
+combination. Example job will be run only once a day at 0:00 midnight
+
+ interval = 86400
+ period = hr {12am} min {0}
+
+=item watch
+
+Kubjas is monitoring file system events with linux inotify API if
+you specify list of files and directories to B<watch>.
+
+One job can have many watch parameters. Kubjas monitors B<IN_CLOSE_NOWRITE>
+events eg. change of file. Example:
+
+ watch = /tmp
+
+Will trigger job start always the /tmp direcotry changes. Only one
+job at a time.
+
+=item notify
+
+Kubjas will notify any other local or remote jobs then current job starts and
+ends. Other job configuratsion specifies then it runs at B<start-message> or
+B<stop-message>. Example you can define two jobs that run after each other.
+
+ [job-one]
+ notify = 127.0.0.1:job-two
+ interval = stop-message
+
+ [job-two]
+ notify = 127.0.0.1:job-one
+ interval = stop-message
+
+=item depends
+
+This job will only run if depends are met. If specified jobs allready running.
+Example you can run periodic jobs only if daemon job is running.
+
+ depends = daemon-job
+ depends = other-job
+
+You can have multiple B<depends> params.
+
+=item conflicts
+
+This job will only run if no specified jobs are running. Example you can
+have CPU intensive jobs that runs only then other similar jobs not running.
+
+ [hard-work]
+ conflicts = cpu-work1
+ conflicts = hard-work2
+
+=item signal
+
+Combined with B<interval> special cases you can send UNIX signals to running jobs
+if notify event happen.
+
+ [catch-signals]
+ run = daemon
+ interval = onchange
+ watch = /tmp/date.txt
+ signal = USR2
+
 =back
+
+=head1 AUTHOR
+
+Kain Kalju <kain@kalju.com>
+
+=head1 COPYRIGHT
+
+Copyright (c) 2014 FlyCom OY (reg.code 10590327)
+Ehitajate tee 108, Tallinn, Estonia
++372 680 6122
+http://www.flycom.ee/
+
+All rights reserved.
+
+=head1 DATE
+
+April 24, 2014
 
 =cut
