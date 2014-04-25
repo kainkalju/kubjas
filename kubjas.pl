@@ -71,8 +71,8 @@ my $packet;
 
 ## EVENT LOOP ##
 
-$SIG{ALRM} = sub { &start_jobs('time'); ualarm(100_000); };
-ualarm(100_000);
+$SIG{ALRM} = sub { &start_jobs('time'); ualarm(200_000); };
+ualarm(200_000);
 
 while (1) {
 	for ($inotify->read) {
@@ -168,6 +168,7 @@ sub start_jobs {
 
 	return if ($time && ($time - $last_time) < 1); # once in a sec.
 	$last_time = $time;
+	my $sort_jobs = 0;
 
 	foreach my $job (@jobs) {
 		my $name = $job->get_param('name');
@@ -209,8 +210,16 @@ sub start_jobs {
 				print scalar(localtime), "  FAILED EXEC $name\n";
 			}
 			($started{$name}, $stms{$name}) = gettimeofday;
+			$job->set_param('exec_time', time);
+			$sort_jobs = 1;
 		}
-
+	}
+	if ($sort_jobs) {
+		my @tmpjobs;
+		foreach my $job (sort { $a->{'exec_time'} <=> $b->{'exec_time'} } @jobs) {
+			push @tmpjobs, $job;
+		}
+		@jobs = @tmpjobs;
 	}
 }
 
@@ -441,6 +450,7 @@ sub new {
 		'signal' => undef, # notify signal: HUP, INT, USR2, ...
 		'ionice' => 0, # 0 - false, 1 - true
 		'nice' => 0, # 0 - false, 1 - true
+		'exec_time' => 0,
 	}, $class;
 
 	while (my($k,$v) = each %parms) {

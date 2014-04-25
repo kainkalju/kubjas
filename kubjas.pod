@@ -225,6 +225,9 @@ You can have multiple B<depends> params.
 depends param can be special wildcard value that require all other jobs to
 be running that are defined at the same configuration file.
 
+ [ping]
+ depends = *
+
 =item nice ionice
 
 Decrease executed job CPU and I/O scheduler priority.
