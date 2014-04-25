@@ -1,5 +1,5 @@
 ;[daily]
-;cmdline = /usr/local/bin/daily.sh
+;cmdline = /usr/share/doc/kubjas/examples/daily.sh
 ;interval = 7200
 ;period = wd {Mon-Fri} hr {0am-1am}
 ;conflicts = date-job

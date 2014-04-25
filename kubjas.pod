@@ -49,6 +49,8 @@ her own config file. You can force configuration reload with B<HUP> signal.
  interval = 10
  depends = catch-signals
  conflicts = date-job
+ nice = 1
+ ionice = 1
 
 =item job-name
 
@@ -65,14 +67,6 @@ these lines are equivalent if PATH environment variable
 includes /usr/local/bin and /usr/bin
 
 Secure way is usage of full path names :-)
-
-=item user
-
-Run jobs as given user. Kubjas resolves user UID
-
-=item group
-
-Run jobs as given group. Kubjas resolves group GID.
 
 =item run
 
@@ -166,6 +160,14 @@ crontab comparison [4]
 
  period = wd {Mon-Fri} hr {22} min {0} sec {0}
 
+=item user
+
+Run jobs as given user. Kubjas resolves user UID
+
+=item group
+
+Run jobs as given group. Kubjas resolves group GID.
+
 =item watch
 
 Kubjas is monitoring file system events with linux inotify API if
@@ -211,6 +213,16 @@ have CPU intensive jobs that runs only then other similar jobs not running.
  [hard-work]
  conflicts = cpu-work1
  conflicts = hard-work2
+
+=item nice
+=item ionice
+
+Decrease executed job CPU and I/O scheduler priority.
+
+ nice = 1
+ ionice = 1
+
+Will do "renice +10" and "ionice -c 3"
 
 =item signal
 
