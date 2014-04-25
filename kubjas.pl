@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# kubjas  Ver 140424
+# kubjas  Ver 140425
 #
 # Script was written by Kain Kalju (kain@kalju.com)
 # (c) 2014 FlyCom OY (reg.code 10590327)
@@ -196,12 +196,7 @@ sub start_jobs {
 			}
 		}
 		unless ($running{$name}) {
-			my $pid = &exec_job(
-				$job->get_param('cmdline'),
-				$job->get_param('run'),
-				$job->get_param('user'),
-				$job->get_param('group')
-			);
+			my $pid = &exec_job($job);
 			if ($pid) {
 				print scalar(localtime), "  EXEC [$name] PID $pid\n";
 				$childs{$pid} = $name;
@@ -380,14 +375,25 @@ return @jobs;
 ## EXEC JOBS ##
 
 sub exec_job {
-	my $cmdline = shift;
-	my $run = shift;
-	my $user = shift;
-	my $group = shift;
+	my $job = shift;
+	my $cmdline = $job->get_param('cmdline');
+	my $run = $job->get_param('run');
+	my $user = $job->get_param('user');
+	my $group = $job->get_param('group');
+	my $ionice = $job->get_param('ionice');
+	my $nice = $job->get_param('nice');
+	if ($ionice && ! -x '/usr/bin/ionice') {
+		print "WARN: cannot find /usr/bin/ionice\n";
+		$ionice = undef;
+	}
+	if ($nice && ! -x '/usr/bin/renice') {
+		print "WARN: cannot find /usr/bin/renice\n";
+		$nice = undef;
+	}
 	unless ($user) { $user = 'root'; }
 	my $uid = getpwnam($user);
 	if (!$uid && $user ne 'root') {
-		print "cannot find user $user\n";
+		print "exec_job: cannot find user $user\n";
 		return;
 	}
 	unless ($group) { $group = $user; }
@@ -395,6 +401,8 @@ sub exec_job {
 	my $pid;
 	defined($pid = fork) or die "Can't fork: $!";
 	return $pid if ($pid);
+	system ("/usr/bin/ionice -c 3 -p $$") if ($ionice);
+	system ("/usr/bin/renice +10 $$") if ($nice);
 	chdir '/' or die "Can't chdir to /: $!";
 	open STDIN, '/dev/null' or die "Can't read /dev/null: $!";
 	if ($run eq 'daemon') {
@@ -428,6 +436,8 @@ sub new {
 		'watch' => undef, # file or direcotry list for inotify
 		'notify' => undef, # other-server:job-name | local-job-name
 		'signal' => undef, # notify signal: HUP, INT, USR2, ...
+		'ionice' => 0, # 0 - false, 1 - true
+		'nice' => 0, # 0 - false, 1 - true
 	}, $class;
 
 	while (my($k,$v) = each %parms) {
