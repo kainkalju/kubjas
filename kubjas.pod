@@ -214,8 +214,7 @@ have CPU intensive jobs that runs only then other similar jobs not running.
  conflicts = cpu-work1
  conflicts = hard-work2
 
-=item nice
-=item ionice
+=item nice ionice
 
 Decrease executed job CPU and I/O scheduler priority.
 
@@ -252,6 +251,6 @@ All rights reserved.
 
 =head1 DATE
 
-April 24, 2014
+April 25, 2014
 
 =cut
