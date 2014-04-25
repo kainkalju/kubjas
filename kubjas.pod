@@ -195,6 +195,23 @@ B<stop-message>. Example you can define two jobs that run after each other.
  notify = 127.0.0.1:job-one
  interval = stop-message
 
+=item conflicts
+
+This job will only run if no specified jobs are running. Example you can
+have CPU intensive jobs that runs only then other similar jobs not running.
+
+ [hard-work]
+ conflicts = cpu-work1
+ conflicts = hard-work2
+
+You can have multiple B<conflicts> params.
+
+conflicts param can be special wildcard value that rule out any jobs
+defined at the same configuration file.
+
+ [spcial-job]
+ conflicts = *
+
 =item depends
 
 This job will only run if depends are met. If specified jobs allready running.
@@ -205,14 +222,8 @@ Example you can run periodic jobs only if daemon job is running.
 
 You can have multiple B<depends> params.
 
-=item conflicts
-
-This job will only run if no specified jobs are running. Example you can
-have CPU intensive jobs that runs only then other similar jobs not running.
-
- [hard-work]
- conflicts = cpu-work1
- conflicts = hard-work2
+depends param can be special wildcard value that require all other jobs to
+be running that are defined at the same configuration file.
 
 =item nice ionice
 

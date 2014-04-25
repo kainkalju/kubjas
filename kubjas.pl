@@ -329,6 +329,7 @@ for (@cfg_files) {
 		-nocase => 1,
 		-allowempty => 1,
 	);
+	my $any = join("\n", $cfg->Sections);
 	for ($cfg->Sections) {
 		if ($uniq{$_}) {
 			my $cfg_filename = $cfg->GetFileName;
@@ -343,6 +344,8 @@ for (@cfg_files) {
 		foreach my $key ($job->get_param_names) {
 			next if ($key eq 'name'); # do not overwrite job name
 			my $val = $cfg->val($sec, $key);
+			if ($key eq 'depends' && $val eq '*') { $val = $any; }
+			if ($key eq 'conflicts' && $val eq '*') { $val = $any; }
 			$job->set_param($key, $val) if ($val);
 		}
 		if (inPeriod(time(), $job->get_param('period')) < 0) {
@@ -402,7 +405,7 @@ sub exec_job {
 	defined($pid = fork) or die "Can't fork: $!";
 	return $pid if ($pid);
 	system ("/usr/bin/ionice -c 3 -p $$") if ($ionice);
-	system ("/usr/bin/renice +10 $$") if ($nice);
+	system ("/usr/bin/renice +10 $$ >/dev/null") if ($nice);
 	chdir '/' or die "Can't chdir to /: $!";
 	open STDIN, '/dev/null' or die "Can't read /dev/null: $!";
 	if ($run eq 'daemon') {
