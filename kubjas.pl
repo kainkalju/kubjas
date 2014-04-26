@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# kubjas  Ver 140425
+# kubjas  Ver 140426
 #
 # Script was written by Kain Kalju (kain@kalju.com)
 # (c) 2014 FlyCom OY (reg.code 10590327)
@@ -306,7 +306,8 @@ sub elapsed_time {
 	$ret .= "${hours}h " if ($hours);
 	$ret .= "${minutes}m " if ($minutes);
 	$ret .= "${seconds}s" if ($seconds);
-	$ret .= sprintf "%.3fs", $microseconds/1000000 unless ($time);
+	$ret .= sprintf "%.3fs ", $microseconds/1000000 unless ($ret);
+	$ret =~ s/\s$//g; # remove trailing space
 	return $ret;
 }
 
