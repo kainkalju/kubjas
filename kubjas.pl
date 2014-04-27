@@ -11,13 +11,14 @@
 use POSIX qw/:sys_wait_h setsid/;
 use IO::Select;
 use IO::Socket;
+use Compress::Zlib qw(crc32);
 use Config::IniFiles;
 use Linux::Inotify2;
 use Time::Period;
 use Time::HiRes qw(ualarm gettimeofday);
 use Config;
 use strict;
-use vars qw($start_time $last_time @jobs %signo %running %started %childs %inwatch %stms);
+use vars qw($start_time $last_time @jobs %signo %running %started %childs %inwatch %stms %known @fp_lifo);
 
 my $default_cfg = '/etc/kubjas.conf';
 my $config_dir = '/etc/kubjas.d';
@@ -115,8 +116,9 @@ sub recv_notify {
 	chomp $packet;
 	my ($port, $iaddr) = sockaddr_in($him);
 	my $remote = inet_ntoa($iaddr);
+	return if (&duplicate_filter($packet));
 	print scalar(localtime), "  notify from $remote:$port {$packet}\n";
-	my ($remote_host, $to_job, $from_job, $notify) = split(/\s/,$packet,4);
+	my ($remote_host, $to_job, $from_job, $notify, $timest) = split(/\s/,$packet,5);
 	my $valid_message = 0;
 	for (qw(start-message success-message failure-message ping)) {
 		if ($notify eq $_) {
@@ -140,7 +142,8 @@ sub send_notify {
 
 	my ($remote_host, $remote_job) = split(/:/,$remote);
 	my $myhost = &whoami;
-	my $message = "$myhost $remote_job $myjob $notify";
+	my $timest = time();
+	my $message = "$myhost $remote_job $myjob $notify $timest";
 
 	my $sock = IO::Socket::INET->new(PeerAddr => "$remote_host:2380", Proto => 'udp');
 	$sock->send($message);
@@ -159,6 +162,24 @@ sub send_notify {
 	}
 	exit;
 }
+
+## NOTIFY MESSAGES DUPLICATE FILTER ##
+
+sub duplicate_filter {
+	my $msg = shift;
+	my $fingerprint = crc32($msg);
+
+	return 1 if ($known{$fingerprint} && $msg eq $known{$fingerprint});
+	
+	$known{$fingerprint} = $msg;
+	push @fp_lifo, $fingerprint;
+	if (scalar(@fp_lifo) > 20) { # keep only last 20
+		my $fingerprint = shift @fp_lifo;
+		delete $known{$fingerprint};
+	}
+	return 0;
+}
+
 
 ## STOP DAEMON JOBS ##
 
