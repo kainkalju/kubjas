@@ -17,7 +17,7 @@ use Time::Period;
 use Time::HiRes qw(ualarm gettimeofday);
 use Config;
 use strict;
-use vars qw($start_time $last_time @jobs %signo %running %started %childs %stop_notify %inwatch %stms);
+use vars qw($start_time $last_time @jobs %signo %running %started %childs %inwatch %stms);
 
 my $default_cfg = '/etc/kubjas.conf';
 my $config_dir = '/etc/kubjas.d';
@@ -34,17 +34,32 @@ $start_time = time();
 ## REGISTER SIGNAL HANDLING ##
 
 $SIG{CHLD} = sub {
-	while( ( my $child = waitpid( -1, &WNOHANG ) ) > 0 ) {
-		my $name = $childs{$child};
-		if ($name) {
-			printf "%s  PID %d exited [%s] running time %s.\n", scalar(localtime), $child, $name, &elapsed_time($started{$name},$stms{$name});
-			delete $running{$name};
-			delete $childs{$child};
-			if ($stop_notify{$name}) {
-				for (split(/\n/,$stop_notify{$name})) {
-					&send_notify($_, $name, 'stop-message');
+	while( ( my $pid = waitpid( -1, &WNOHANG ) ) > 0 ) {
+		my $status = $?;
+		my $exit = $? >> 8;
+		my $signal = $? & 127;
+		my $job = $childs{$pid};
+		if ($job) {
+			my $name = $job->get_param('name');
+			if ($exit > 0) {
+				printf "%s  PID %d exited [%s] running time %s.\n", scalar(localtime), $pid, $name, &elapsed_time($started{$name},$stms{$name});
+				print scalar(localtime), "  FAILURE: PID $pid exited with status = $status (exit=$exit, signal=$signal)\n";
+				my $notify = $job->get_param('notify-failure');
+				for (split(/\n/,$notify)) {
+					&send_notify($_, $name, 'failure-message');
+				}
+			} else {
+				printf "%s  PID %d exited [%s] running time %s.\n", scalar(localtime), $pid, $name, &elapsed_time($started{$name},$stms{$name});
+				my $notify = $job->get_param('notify-success');
+				for (split(/\n/,$notify)) {
+					&send_notify($_, $name, 'success-message');
 				}
 			}
+			delete $running{$name};
+			delete $childs{$pid};
+		}
+		elsif ($exit > 0) {
+			print scalar(localtime), "  WARN: PID $pid exited with status = $status (exit=$exit, signal=$signal)\n";
 		}
 	}
 };
@@ -103,7 +118,7 @@ sub recv_notify {
 	print scalar(localtime), "  notify from $remote:$port {$packet}\n";
 	my ($remote_host, $to_job, $from_job, $notify) = split(/\s/,$packet,4);
 	my $valid_message = 0;
-	for (qw(start-message stop-message ping)) {
+	for (qw(start-message success-message failure-message ping)) {
 		if ($notify eq $_) {
 			$valid_message = 1;
 		}
@@ -200,12 +215,11 @@ sub start_jobs {
 			my $pid = &exec_job($job);
 			if ($pid) {
 				print scalar(localtime), "  EXEC [$name] PID $pid\n";
-				$childs{$pid} = $name;
+				$childs{$pid} = $job;
 				$running{$name} = $pid;
-				for (split(/\n/,$job->get_param('notify'))) {
+				for (split(/\n/,$job->get_param('notify-start'))) {
 					&send_notify($_, $name, 'start-message');
 				}
-				$stop_notify{$name} = $job->get_param('notify');
 			} else {
 				print scalar(localtime), "  FAILED EXEC $name\n";
 			}
@@ -419,7 +433,7 @@ sub exec_job {
 	chdir '/' or die "Can't chdir to /: $!";
 	open STDIN, '/dev/null' or die "Can't read /dev/null: $!";
 	if ($run eq 'daemon') {
-		open STDOUT, '>/dev/null' or die "Can't write to /dev/null: $!";
+	#ajutine	open STDOUT, '>/dev/null' or die "Can't write to /dev/null: $!";
 	}
 	setsid or die "Can't start a new session: $!";
 	open STDERR, '>&STDOUT' or die "Can't dup stdout: $!";
@@ -441,13 +455,15 @@ sub new {
 		'cmdline' => undef,
 		'user' => 'root', # start job with user permissions
 		'group' => 'root', # start job with group permissions
-		'interval' => 0, # seconds | onchange | start-message | stop-message
+		'interval' => 0, # seconds | onchange | start-message | success-message | failure-message
 		'period' => 'mo {1-12}', # man Time::Period
 		'conflicts' => undef, # other job names \n separated array
 		'depends' => undef, # other job names \n separated array
 		'run' => 'periodic', # or 'daemon'
 		'watch' => undef, # file or direcotry list for inotify
-		'notify' => undef, # other-server:job-name | local-job-name
+		'notify-start' => undef, # other-server:job-name | local-job-name
+		'notify-success' => undef, # other-server:job-name | local-job-name
+		'notify-failure' => undef, # other-server:job-name | local-job-name
 		'signal' => undef, # notify signal: HUP, INT, USR2, ...
 		'ionice' => 0, # 0 - false, 1 - true
 		'nice' => 0, # 0 - false, 1 - true

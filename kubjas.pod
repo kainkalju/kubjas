@@ -13,7 +13,7 @@ Measurements are in microseconds resolution.
 
 Kubjas configuration is standard INI file format. You can have multiple
 configuration files at same time. Main configuration is B</etc/kubjas.conf>
-and B</etc/kubjas.d/> is for additional configuratsions. Each job can have
+and B</etc/kubjas.d/> is for additional configurations. Each job can have
 her own config file. You can force configuration reload with B<HUP> signal.
 
 =over
@@ -21,25 +21,23 @@ her own config file. You can force configuration reload with B<HUP> signal.
 =item example.conf
 
  [date-job]
- cmdline = /usr/local/bin/date.sh
+ cmdline = date +"%H:%M" > /var/tmp/date.txt
  run = periodic
  interval = 60
- period = wd {1 3 5 7} min {0-29}, wd {2 4 6} min {30-59}
  user = nobody
  group = nogroup
- notify = 192.168.108.227:catch-signals
+ notify-failure = 192.168.1.27:catch-signals
 
  [catch-signals]
  cmdline = /usr/local/bin/catch-signals.pl
  run = daemon
- interval = stop-message
+ interval = failure-message
  signal = USR2
 
  [readfile]
  cmdline = /usr/local/bin/readfile.sh
  interval = onchange
  watch = /var/tmp/date.txt
- watch = /tmp/date.txt
  run = periodic
  user = nobody
  group = nogroup
@@ -47,6 +45,7 @@ her own config file. You can force configuration reload with B<HUP> signal.
  [very-shy-job]
  cmdline = /usr/local/bin/shy.sh
  interval = 10
+ period = wd {1 3 5 7} min {0-29}, wd {2 4 6} min {30-59}
  depends = catch-signals
  conflicts = date-job
  nice = 1
@@ -58,17 +57,17 @@ her own config file. You can force configuration reload with B<HUP> signal.
 
 =item cmdline
 
-Parameter B<cmdline> determines executable programm with parameters
+Parameter B<cmdline> define executable programm with parameters
 
  cmdline = perl /usr/local/bin/catch-signals.pl
  cmdline = catch-signals.pl
 
 these lines are equivalent if PATH environment variable 
-includes /usr/local/bin and /usr/bin
+including /usr/local/bin and /usr/bin
 
 Secure way is usage of full path names :-)
 
-=item run
+=item "run"
 
 Allowable values are B<periodic> or B<daemon>. The main differences are
 the way they are treated. Daemon jobs cannot print any output to STDOUT
@@ -87,12 +86,12 @@ delay between the different runs. Actual delay may be longer if other
 conditions prevent running.
 
 There are also three special intervals that activated only by outside
-events: B<onchange>, B<start-message>, B<stop-message>
+events: B<onchange>, B<start-message>, B<success-message>, B<failure-message>
 
 onchange works with B<watch> parameter. see B<watch>
 
-start-message and stop-message will trigger job executing then notify
-message arrives. see B<notify>
+start-message, success-message, failure-message will trigger job
+executing then notify message arrives. see B<notify-start>
 
 =item period
 
@@ -181,19 +180,26 @@ events eg. change of file. Example:
 Will trigger job start always the /tmp direcotry changes. Only one
 job at a time.
 
-=item notify
+=item notify-start notify-success notify-failure
 
 Kubjas will notify any other local or remote jobs then current job starts and
-ends. Other job configuratsion specifies then it runs at B<start-message> or
-B<stop-message>. Example you can define two jobs that run after each other.
+ends. Other job configuration specifies then it runs at B<start-message> or
+B<success-message>. Example you can define two jobs that run after each other.
 
  [job-one]
- notify = 127.0.0.1:job-two
- interval = stop-message
+ notify-success = 127.0.0.1:job-two
+ interval = success-message
 
  [job-two]
- notify = 127.0.0.1:job-one
- interval = stop-message
+ notify-success = 127.0.0.1:job-one
+ interval = success-message
+
+Then job exits with return code other than 0 (with some kind of failure) then
+you can send failure notify to job that fix it or notifies administrator.
+
+ [failure-handler]
+ cmdline = /usr/local/bin/send_email_to_admin.sh
+ interval = failure-message
 
 =item conflicts
 
@@ -265,6 +271,6 @@ All rights reserved.
 
 =head1 DATE
 
-April 25, 2014
+April 27, 2014
 
 =cut
