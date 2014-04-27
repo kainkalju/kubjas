@@ -44,7 +44,7 @@ her own config file. You can force configuration reload with B<HUP> signal.
 
  [very-shy-job]
  cmdline = /usr/local/bin/shy.sh
- interval = 10
+ interval = 10-20
  period = wd {1 3 5 7} min {0-29}, wd {2 4 6} min {30-59}
  depends = catch-signals
  conflicts = date-job
@@ -81,12 +81,20 @@ stops. Kubjas does not kill them.
 
 =item interval
 
-Specifies time in seconds between job last start. It is the minumum
+Specifies time in seconds between job last start. It is the minimum
 delay between the different runs. Actual delay may be longer if other
 conditions prevent running.
 
+Interval can also be defined as randomized range. Example start job every
+20 to 30 seconds.
+
+ interval = 20-30 
+
 There are also three special intervals that activated only by outside
 events: B<onchange>, B<start-message>, B<success-message>, B<failure-message>
+
+ interval = onchange
+ interval = failure-message
 
 onchange works with B<watch> parameter. see B<watch>
 

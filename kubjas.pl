@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# kubjas  Ver 140426
+# kubjas  Ver 140427
 #
 # Script was written by Kain Kalju (kain@kalju.com)
 # (c) 2014 FlyCom OY (reg.code 10590327)
@@ -196,6 +196,10 @@ sub start_jobs {
 
 		my $interval = $job->get_param('interval');
 		next unless ($interval);
+		if ($interval =~ m,(\d+)\s*-\s*(\d+),) { # randomized range intervals
+			my $diff = abs( $2 - $1 );
+			$interval = int(rand($diff)) + $1;
+		}
 		next if ($watch && lc($interval) ne 'onchange');
 		next if (!$watch && lc($interval) eq 'onchange' && !$daemon);
 		next if ($notify && lc($interval) ne $msg[0]);
@@ -433,7 +437,7 @@ sub exec_job {
 	chdir '/' or die "Can't chdir to /: $!";
 	open STDIN, '/dev/null' or die "Can't read /dev/null: $!";
 	if ($run eq 'daemon') {
-	#ajutine	open STDOUT, '>/dev/null' or die "Can't write to /dev/null: $!";
+		open STDOUT, '>/dev/null' or die "Can't write to /dev/null: $!";
 	}
 	setsid or die "Can't start a new session: $!";
 	open STDERR, '>&STDOUT' or die "Can't dup stdout: $!";

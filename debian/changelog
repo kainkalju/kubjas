@@ -1,3 +1,11 @@
+kubjas (0.8) unstable; urgency=low
+
+  * added interval randomized range
+  * changes notify messages
+  * logs jobs return codes
+
+ -- Kain Kalju <kain@flycom.ee>  Sun, 27 Apr 2014 17:52:29 +0300
+
 kubjas (0.7) unstable; urgency=high
 
   * sorts jobs array by exec_time
