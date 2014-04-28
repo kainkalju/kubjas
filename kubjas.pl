@@ -99,7 +99,7 @@ ualarm(200_000);
 while (1) {
 	for ($inotify->read) {
 		ualarm(0);
-		&start_jobs('watch', $_->fullname, $_->mask);
+		&start_jobs('watch', $_->fullname);
 		ualarm(100_000);
 	}
 	foreach my $fh ($sel->can_read) {
@@ -205,8 +205,10 @@ sub start_jobs {
 	my ($trigger,@msg) = @_;
 	my ($time,$watch,$notify);
 	if ($trigger eq 'time') { $time = time; }
-	elsif ($trigger eq 'notify') { $notify = shift @msg; }
-	elsif ($trigger eq 'watch') { $watch = shift @msg; }
+	elsif ($trigger eq 'notify') { $notify = $msg[0]; }
+	elsif ($trigger eq 'watch') { $watch = $msg[0];
+		push @msg, 'kubjas', &whoami;
+	}
 
 	return if ($time && ($time - $last_time) < 1); # once in a sec.
 	$last_time = $time;
@@ -228,8 +230,11 @@ sub start_jobs {
 			$interval = int(rand($diff)) + $1;
 		}
 		next if ($watch && lc($interval) ne 'onchange');
-		next if (!$watch && lc($interval) eq 'onchange' && !$daemon);
-		next if ($notify && lc($interval) ne $msg[0]);
+		if ($watch && lc($interval) eq 'onchange') {
+			next unless (inWatch($job,$watch));
+			unshift @msg, $name;
+		}
+		next if ($notify && lc($interval) ne $msg[1]);
 		next if (!$watch && !$notify && $interval !~ /\d/ && !$daemon);
 		my $seconds = $job->get_param('exec_time');
 		next if ($time && $interval =~ /\d/ && ($time - $seconds) < $interval);
@@ -244,7 +249,7 @@ sub start_jobs {
 			}
 		}
 		unless ($running{$name}) {
-			my $pid = &exec_job($job);
+			my $pid = &exec_job($job,@msg);
 			if ($pid) {
 				print scalar(localtime), "  EXEC [$name] PID $pid\n";
 				$childs{$pid} = $job;
@@ -259,6 +264,7 @@ sub start_jobs {
 			$job->set_param('exec_time', $seconds);
 			$job->set_param('exec_ms', $microseconds);
 			$sort_jobs = 1;
+			if ($watch) { shift @msg; } # removes name
 		}
 	}
 	if ($sort_jobs) {
@@ -292,6 +298,19 @@ sub noDepency {
 		}
 	}
 	return $dependecy;
+}
+
+sub inWatch {
+	my $job = shift;
+	my $fullname = shift;
+	my $match = 0;
+	for (split(/\n/,$job->get_param('watch'))) {
+		if (index($fullname,$_) == 0) {
+			$match = 1;
+			last;
+		}
+	}
+	return $match;
 }
 
 sub isExecutable {
@@ -437,6 +456,9 @@ return @jobs;
 sub exec_job {
 	my $job = shift;
 	my $cmdline = $job->get_param('cmdline');
+	if ($cmdline =~ /%/) {
+		$cmdline = &set_cmdline_env($cmdline, @_);
+	}
 	my $run = $job->get_param('run');
 	my $user = $job->get_param('user');
 	my $group = $job->get_param('group');
@@ -466,13 +488,21 @@ sub exec_job {
 	chdir '/' or die "Can't chdir to /: $!";
 	open STDIN, '/dev/null' or die "Can't read /dev/null: $!";
 	if ($run eq 'daemon') {
-		open STDOUT, '>/dev/null' or die "Can't write to /dev/null: $!";
+#ajutine#		open STDOUT, '>/dev/null' or die "Can't write to /dev/null: $!";
 	}
 	setsid or die "Can't start a new session: $!";
 	open STDERR, '>&STDOUT' or die "Can't dup stdout: $!";
 	$(=$)=$gid;
 	$<=$>=$uid;
 	{ exec ($cmdline) }; print STDERR "couldn't exec $cmdline: $!";
+}
+
+sub set_cmdline_env {
+	my ($cmdline,$tojob,$notify,$from_job,$host) = @_;
+	$cmdline =~ s/%host%/$host/g;
+	$cmdline =~ s/%job%/$from_job/g;
+	$cmdline =~ s/%notify%/$notify/g;
+	return $cmdline;
 }
 
 ## JOB OBJECT ##

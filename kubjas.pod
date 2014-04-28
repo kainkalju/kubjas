@@ -38,7 +38,6 @@ her own config file. You can force configuration reload with B<HUP> signal.
  cmdline = /usr/local/bin/readfile.sh
  interval = onchange
  watch = /var/tmp/date.txt
- run = periodic
  user = nobody
  group = nogroup
 
@@ -66,6 +65,17 @@ these lines are equivalent if PATH environment variable
 including /usr/local/bin and /usr/bin
 
 Secure way is usage of full path names :-)
+
+In combination with B<watch> and B<notify> you can add some template
+parameters that will be filled with info at execution time.
+
+ cmdline = send_alert.sh %host% %job% %notify%
+
+Template name B<%host%> will replaced with hostname where notify origins.
+Template name B<%job%> will replaced with job-name which sends the notify.
+Template name B<%notify> will replaced with notify message which can be
+B<start-message>, B<success-message>, B<failure-message> or B<filename>
+that inotify B<watch> discovered B<IN_CLOSE_NOWRITE> event.
 
 =item "run"
 
@@ -279,6 +289,6 @@ All rights reserved.
 
 =head1 DATE
 
-April 27, 2014
+April 28, 2014
 
 =cut
