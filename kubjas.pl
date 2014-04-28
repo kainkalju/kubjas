@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# kubjas  Ver 140427
+# kubjas  Ver 140428
 #
 # Script was written by Kain Kalju (kain@kalju.com)
 # (c) 2014 FlyCom OY (reg.code 10590327)
@@ -18,7 +18,7 @@ use Time::Period;
 use Time::HiRes qw(ualarm gettimeofday);
 use Config;
 use strict;
-use vars qw($start_time $last_time @jobs %signo %running %started %childs %inwatch %stms %known @fp_lifo);
+use vars qw($start_time $last_time @jobs %signo %running %childs %inwatch %known @fp_lifo);
 
 my $default_cfg = '/etc/kubjas.conf';
 my $config_dir = '/etc/kubjas.d';
@@ -42,18 +42,24 @@ $SIG{CHLD} = sub {
 		my $job = $childs{$pid};
 		if ($job) {
 			my $name = $job->get_param('name');
+			my $seconds = $job->get_param('exec_time');
+			my $microseconds = $job->get_param('exec_ms');
 			if ($exit > 0) {
-				printf "%s  PID %d exited [%s] running time %s.\n", scalar(localtime), $pid, $name, &elapsed_time($started{$name},$stms{$name});
+				printf "%s  PID %d exited [%s] running time %s.\n", scalar(localtime), $pid, $name, &elapsed_time($seconds,$microseconds);
 				print scalar(localtime), "  FAILURE: PID $pid exited with status = $status (exit=$exit, signal=$signal)\n";
 				my $notify = $job->get_param('notify-failure');
 				for (split(/\n/,$notify)) {
 					&send_notify($_, $name, 'failure-message');
 				}
 			} else {
-				printf "%s  PID %d exited [%s] running time %s.\n", scalar(localtime), $pid, $name, &elapsed_time($started{$name},$stms{$name});
+				printf "%s  PID %d exited [%s] running time %s.\n", scalar(localtime), $pid, $name, &elapsed_time($seconds,$microseconds);
 				my $notify = $job->get_param('notify-success');
 				for (split(/\n/,$notify)) {
 					&send_notify($_, $name, 'success-message');
+				}
+				if ((time() - $seconds) < 1 && $job->get_param('run') eq 'daemon') {
+					printf "%s  Cannot trace daemonized jobs that fork twice after being run. Disable job [%s]\n", scalar(localtime), $name;
+					$job->set_param('interval', 0);
 				}
 			}
 			delete $running{$name};
@@ -225,7 +231,8 @@ sub start_jobs {
 		next if (!$watch && lc($interval) eq 'onchange' && !$daemon);
 		next if ($notify && lc($interval) ne $msg[0]);
 		next if (!$watch && !$notify && $interval !~ /\d/ && !$daemon);
-		next if ($time && $interval =~ /\d/ && ($time - $started{$name}) < $interval);
+		my $seconds = $job->get_param('exec_time');
+		next if ($time && $interval =~ /\d/ && ($time - $seconds) < $interval);
 		next if ($time && $interval =~ /\d/ && ($time - $start_time) < $interval);
 
 		my $signal = $job->get_param('signal');
@@ -248,8 +255,9 @@ sub start_jobs {
 			} else {
 				print scalar(localtime), "  FAILED EXEC $name\n";
 			}
-			($started{$name}, $stms{$name}) = gettimeofday;
-			$job->set_param('exec_time', time);
+			my ($seconds, $microseconds) = gettimeofday;
+			$job->set_param('exec_time', $seconds);
+			$job->set_param('exec_ms', $microseconds);
 			$sort_jobs = 1;
 		}
 	}
@@ -354,7 +362,7 @@ sub elapsed_time {
 
 sub reading_conf {
 
-print scalar(localtime), "  reading_conf\n";
+print scalar(localtime), "  Reading configuration files\n";
 
 my @cfg_files = ( $default_cfg );
 
@@ -492,7 +500,8 @@ sub new {
 		'signal' => undef, # notify signal: HUP, INT, USR2, ...
 		'ionice' => 0, # 0 - false, 1 - true
 		'nice' => 0, # 0 - false, 1 - true
-		'exec_time' => 0,
+		'exec_time' => 0, # seconds  (unix timestamp)
+		'exec_ms' => 0, # microseconds
 	}, $class;
 
 	while (my($k,$v) = each %parms) {
