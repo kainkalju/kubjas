@@ -1,3 +1,9 @@
+kubjas (1.0) unstable; urgency=low
+
+  * adds [*] default sections
+
+ -- Kain Kalju <kain@flycom.ee>  Tue, 29 Apr 2014 13:54:02 +0300
+
 kubjas (0.9) unstable; urgency=low
 
   * fixes watch

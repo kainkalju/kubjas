@@ -20,13 +20,16 @@ her own config file. You can force configuration reload with B<HUP> signal.
 
 =item example.conf
 
+ [*]
+ notify-failure = 192.168.1.27:catch-signals
+
  [date-job]
  cmdline = date +"%H:%M" > /var/tmp/date.txt
  run = periodic
  interval = 60
  user = nobody
  group = nogroup
- notify-failure = 192.168.1.27:catch-signals
+ notify-success = 192.168.1.27:catch-signals
 
  [catch-signals]
  cmdline = /usr/local/bin/catch-signals.pl
@@ -53,6 +56,9 @@ her own config file. You can force configuration reload with B<HUP> signal.
 =item job-name
 
 [job-name] is the INI file section. Job names must be unique.
+
+Special section name [*] sets default params that will be used
+with all jobs. Named job sections overwrite default params.
 
 =item cmdline
 
@@ -289,6 +295,6 @@ All rights reserved.
 
 =head1 DATE
 
-April 28, 2014
+April 29, 2014
 
 =cut

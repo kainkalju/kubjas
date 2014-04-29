@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# kubjas  Ver 140428
+# kubjas  Ver 140429
 #
 # Script was written by Kain Kalju (kain@kalju.com)
 # (c) 2014 FlyCom OY (reg.code 10590327)
@@ -396,6 +396,27 @@ for (@files) {
 	push @cfg_files, "$config_dir/$_";
 }
 
+my %default_params;
+# find user default settings
+for (@cfg_files) {
+	my $cfg = Config::IniFiles->new(
+		-file => $_,
+		-nocase => 1,
+		-allowempty => 1,
+	);
+	my $job = Kubjas::Job->new( name => 'defaults' );
+	for ($cfg->Sections) {
+		next unless ($_ eq '*');
+		my $sec = $_;
+		foreach my $key ($job->get_param_names) {
+			next if ($key eq 'name'); # do not overwrite job name
+			next if ($default_params{$key}); # set only once
+			my $val = $cfg->val($sec, $key);
+			$default_params{$key} = $val if ($val);
+		}
+	}
+}
+
 my %uniq;
 @jobs = ();
 
@@ -407,6 +428,7 @@ for (@cfg_files) {
 	);
 	my $any = join("\n", $cfg->Sections);
 	for ($cfg->Sections) {
+		next if ($_ eq '*');
 		if ($uniq{$_}) {
 			my $cfg_filename = $cfg->GetFileName;
 			warn "warn: duplicate job [$_] in $cfg_filename\n";
@@ -417,12 +439,21 @@ for (@cfg_files) {
 		my $job = Kubjas::Job->new( name => $_ );
 		my $sec = $_;
 
+		# set user default params
+		while (my($key,$val) = each %default_params) {
+			$job->set_param($key, $val) if ($val);
+		}
+
 		foreach my $key ($job->get_param_names) {
 			next if ($key eq 'name'); # do not overwrite job name
 			my $val = $cfg->val($sec, $key);
-			if ($key eq 'depends' && $val eq '*') { $val = $any; }
-			if ($key eq 'conflicts' && $val eq '*') { $val = $any; }
 			$job->set_param($key, $val) if ($val);
+		}
+		if ($job->get_param('depends') eq '*') {
+			$job->set_param('depends', $any);
+		}
+		if ($job->get_param('conflicts') eq '*') {
+			$job->set_param('conflicts', $any);
 		}
 		if (inPeriod(time(), $job->get_param('period')) < 0) {
 			printf "incorrect period [%s] %s\n", $job->get_param('name'), $job->get_param('period');
@@ -488,7 +519,7 @@ sub exec_job {
 	chdir '/' or die "Can't chdir to /: $!";
 	open STDIN, '/dev/null' or die "Can't read /dev/null: $!";
 	if ($run eq 'daemon') {
-#ajutine#		open STDOUT, '>/dev/null' or die "Can't write to /dev/null: $!";
+		open STDOUT, '>/dev/null' or die "Can't write to /dev/null: $!";
 	}
 	setsid or die "Can't start a new session: $!";
 	open STDERR, '>&STDOUT' or die "Can't dup stdout: $!";
