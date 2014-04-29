@@ -29,6 +29,7 @@ our $inotify = new Linux::Inotify2
     or die "Unable to create new inotify object: $!" ;
 $inotify->blocking(0); # nonblocking
 
+$0 = 'kubjas'; # change process cmdline
 $start_time = time();
 &reading_conf;
 
