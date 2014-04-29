@@ -397,14 +397,16 @@ for (@files) {
 	push @cfg_files, "$config_dir/$_";
 }
 
-my %default_params;
-# find user default settings
+my %uniq;
+@jobs = ();
+
 for (@cfg_files) {
 	my $cfg = Config::IniFiles->new(
 		-file => $_,
 		-nocase => 1,
 		-allowempty => 1,
 	);
+	my %default_params;
 	my $job = Kubjas::Job->new( name => 'defaults' );
 	for ($cfg->Sections) {
 		next unless ($_ eq '*');
@@ -416,17 +418,6 @@ for (@cfg_files) {
 			$default_params{$key} = $val if ($val);
 		}
 	}
-}
-
-my %uniq;
-@jobs = ();
-
-for (@cfg_files) {
-	my $cfg = Config::IniFiles->new(
-		-file => $_,
-		-nocase => 1,
-		-allowempty => 1,
-	);
 	my $any = join("\n", $cfg->Sections);
 	for ($cfg->Sections) {
 		next if ($_ eq '*');

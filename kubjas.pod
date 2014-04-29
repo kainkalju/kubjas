@@ -58,7 +58,8 @@ her own config file. You can force configuration reload with B<HUP> signal.
 [job-name] is the INI file section. Job names must be unique.
 
 Special section name [*] sets default params that will be used
-with all jobs. Named job sections overwrite default params.
+with all jobs defined at the same configuration file. Named job
+sections overwrite default params.
 
 =item cmdline
 
