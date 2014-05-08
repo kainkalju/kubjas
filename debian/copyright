@@ -3,8 +3,7 @@ Upstream-Name: kubjas
 Source: <url://example.com>
 
 Files: *
-Copyright: <years> <put author's name and email here>
-           <years> <likewise for another author>
+Copyright: 2014 Kain Kalju <kain@flycom.ee>
 License: Artistic
 
 Files: debian/*

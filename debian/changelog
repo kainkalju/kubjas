@@ -1,3 +1,11 @@
+kubjas (1.1) unstable; urgency=low
+
+  * command line options
+  * removes run=daemon
+  * adds output configuration option
+
+ -- Kain Kalju <kain@flycom.ee>  Thu, 08 May 2014 13:30:59 +0300
+
 kubjas (1.0) unstable; urgency=low
 
   * adds [*] default sections

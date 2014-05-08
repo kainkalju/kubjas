@@ -3,5 +3,5 @@
 ;interval = 7200
 ;period = wd {Mon-Fri} hr {0am-1am}
 ;conflicts = date-job
-;run = periodic
 ;user = kain
+;output = none

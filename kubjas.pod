@@ -1,6 +1,14 @@
 =pod
 
-=head1 KUBJAS
+=head1 NAME
+
+kubjas - (cron like) daemon to execute scheduled commands
+
+=head1 SYNOPSIS
+
+kubjas.pl [--background] [--conf_file /etc/kubjas.conf] [--log_file /path/kubjas.log] [--pid_file /path/kubjas.pid]
+
+=head1 DESCRIPTION
 
 Kubjas is periodic job scheduler that operates with minimum 1 second intervals.
 
@@ -13,8 +21,10 @@ Measurements are in microseconds resolution.
 
 Kubjas configuration is standard INI file format. You can have multiple
 configuration files at same time. Main configuration is B</etc/kubjas.conf>
-and B</etc/kubjas.d/> is for additional configurations. Each job can have
+and B</etc/kubjas.d/> directory is for additional configurations. Each job can have
 her own config file. You can force configuration reload with B<HUP> signal.
+
+=head1 CONFIGURATION
 
 =over
 
@@ -25,7 +35,6 @@ her own config file. You can force configuration reload with B<HUP> signal.
 
  [date-job]
  cmdline = date +"%H:%M" > /var/tmp/date.txt
- run = periodic
  interval = 60
  user = nobody
  group = nogroup
@@ -33,7 +42,7 @@ her own config file. You can force configuration reload with B<HUP> signal.
 
  [catch-signals]
  cmdline = /usr/local/bin/catch-signals.pl
- run = daemon
+ output = none
  interval = failure-message
  signal = USR2
 
@@ -41,6 +50,7 @@ her own config file. You can force configuration reload with B<HUP> signal.
  cmdline = /usr/local/bin/readfile.sh
  interval = onchange
  watch = /var/tmp/date.txt
+ output = /tmp/date.log
  user = nobody
  group = nogroup
 
@@ -63,13 +73,13 @@ sections overwrite default params.
 
 =item cmdline
 
-Parameter B<cmdline> define executable programm with parameters
+Parameter B<cmdline> define executable program with parameters
 
  cmdline = perl /usr/local/bin/catch-signals.pl
  cmdline = catch-signals.pl
 
-these lines are equivalent if PATH environment variable 
-including /usr/local/bin and /usr/bin
+these lines are equivalent if B<PATH> environment variable 
+includes /usr/local/bin and /usr/bin
 
 Secure way is usage of full path names :-)
 
@@ -84,44 +94,48 @@ Template name B<%notify> will replaced with notify message which can be
 B<start-message>, B<success-message>, B<failure-message> or B<filename>
 that inotify B<watch> discovered B<IN_CLOSE_NOWRITE> event.
 
-=item "run"
+=item output
 
-Allowable values are B<periodic> or B<daemon>. The main differences are
-the way they are treated. Daemon jobs cannot print any output to STDOUT
-or STDERR - the link between kubjas STDOUT and daemon is breaked.
-Daemon jobs are started with kubjas and will be restarted any time they
-exited. Kubjas will kill all daemon jobs at shutdown (restarts).
+Default is B<passthrough> and all jobs STDOUT and/or STDERR stream will
+passed through to kubjas STDOUT or log file (if defined with command line
+options).
 
-Periodic jobs STDOUT and STDERR output will be printed to kubjas logfile.
-All running periodic jobs will run background until the end then kubjas
-stops. Kubjas does not kill them.
+Value B<none> disables all output and is "cmdline 2>&1 >/dev/null" equivalent.
+
+ output = none
+
+If param output value is filename then kubjas opens the file with append
+atributes and jobs STDOUT and STDERR will be forwarded to this file.
+
+ output = /var/log/job-name.log
 
 =item interval
 
 Specifies time in seconds between job last start. It is the minimum
 delay between the different runs. Actual delay may be longer if other
-conditions prevent running.
+conditions prevent running. Null (0) means that job is disabled.
 
-Interval can also be defined as randomized range. Example start job every
+Interval can also be defined as randomized range. Example starts job every
 20 to 30 seconds.
 
  interval = 20-30 
 
-There are also three special intervals that activated only by outside
-events: B<onchange>, B<start-message>, B<success-message>, B<failure-message>
+There are also four special (non numeric) intervals that activated 
+only by outside events: B<onchange>, B<start-message>, B<success-message>,
+B<failure-message>
 
  interval = onchange
  interval = failure-message
 
-onchange works with B<watch> parameter. see B<watch>
+B<onchange> works with B<watch> parameter. see B<watch>
 
 start-message, success-message, failure-message will trigger job
-executing then notify message arrives. see B<notify-start>
+execution then notify message arrives. see B<notify-start>
 
 =item period
 
 Parameter determines if a given time falls within a given period.
-Kubjas execute job only if period is met.
+Kubjas executes job only if period is met.
 
 Period is optional param.
 
@@ -194,7 +208,7 @@ Run jobs as given group. Kubjas resolves group GID.
 
 =item watch
 
-Kubjas is monitoring file system events with linux inotify API if
+Kubjas is monitoring file system events with Linux inotify API if
 you specify list of files and directories to B<watch>.
 
 One job can have many watch parameters. Kubjas monitors B<IN_CLOSE_NOWRITE>
@@ -281,21 +295,29 @@ jobs if notify event happen.
 
 =back
 
+=head1 SEE ALSO
+
+Time::Period(3pm)
+inotify(7)
+
+=head1 FILES
+
+ /etc/kubjas.conf
+ /etc/kubjas.d/
+
 =head1 AUTHOR
 
-Kain Kalju <kain@kalju.com>
+ Kain Kalju <kain@kalju.com>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2014 FlyCom OY (reg.code 10590327)
-Ehitajate tee 108, Tallinn, Estonia
-+372 680 6122
-http://www.flycom.ee/
-
-All rights reserved.
+ Copyright (c) 2014 FlyCom OU.
+ This is free software; see the source for copying conditions.  There is
+ NO  warranty;  not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ PURPOSE.
 
 =head1 DATE
 
-April 29, 2014
+May 8, 2014
 
 =cut

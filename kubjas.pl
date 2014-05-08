@@ -1,12 +1,9 @@
 #!/usr/bin/perl
 #
-# kubjas  Ver 140429
+# kubjas  Ver 140508
 #
-# Script was written by Kain Kalju (kain@kalju.com)
-# (c) 2014 FlyCom OY (reg.code 10590327)
-# Ehitajate tee 108, Tallinn, Estonia
-# +372 680 6122
-# http://www.flycom.ee/
+# AUTHOR: Kain Kalju (kain@kalju.com)
+# LICENSE: The "Artistic License" - http://dev.perl.org/licenses/artistic.html
 
 use POSIX qw/:sys_wait_h setsid/;
 use IO::Select;
@@ -17,11 +14,73 @@ use Linux::Inotify2;
 use Time::Period;
 use Time::HiRes qw(ualarm gettimeofday);
 use Config;
+use Cwd;
 use strict;
 use vars qw($start_time $last_time @jobs %signo %running %childs %inwatch %known @fp_lifo);
 
 my $default_cfg = '/etc/kubjas.conf';
 my $config_dir = '/etc/kubjas.d';
+
+## commandline opt ##
+
+our ($log_file, $pid_file, $daemonize);
+
+while ($ARGV[0]) {
+	if ($ARGV[0] eq '-h' || $ARGV[0] eq '--help') {
+		print "Usage: $0 [configure options]\n";
+		print "   --conf_file $default_cfg\n";
+		print "   --log_file /path/kubjas.log\n";
+		print "   --pid_file /path/kubjas.pid\n";
+		print "   --background\n";
+		exit;
+	}
+	elsif ($ARGV[0] =~ /^--conf_file/) {
+		$default_cfg = $ARGV[1];
+		if ($ARGV[1] !~ /\//) {
+			$default_cfg = cwd() . '/' . $ARGV[1];
+		}
+		unless (stat($default_cfg)) {
+			die "Can\'t open file: $default_cfg\n";
+		}
+		shift @ARGV;
+	}
+	elsif ($ARGV[0] =~ /^--log_file/) {
+		$log_file = $ARGV[1];
+		shift @ARGV;
+	}
+	elsif ($ARGV[0] =~ /^--pid_file/) {
+		$pid_file = $ARGV[1];
+		shift @ARGV;
+	}
+	elsif ($ARGV[0] =~ /^--background/) {
+		$daemonize = 1;
+	}
+	shift @ARGV;
+}
+
+if ($log_file) {
+	open LOGF, ">>$log_file";
+	select(STDOUT); $|=1;
+	open STDOUT, '>&LOGF' or die "Can't dup stdout: $!";
+	open STDERR, '>&STDOUT' or die "Can't dup stderr: $!";
+}
+if ($daemonize) {
+	chdir '/' or die "Can't chdir to /: $!";
+	open STDIN, '/dev/null' or die "Can't read /dev/null: $!";
+	unless ($log_file) {
+		open STDERR, '>&STDOUT' or die "Can't dup stdout: $!";
+		open STDOUT, '>/dev/null' or die "Can't write to /dev/null: $!";
+	}
+	my $pid;
+	defined($pid = fork) or die "Can't fork: $!";
+	exit if ($pid);
+	setsid or die "Can't start a new session: $!";
+}
+if ($pid_file) {
+	open PIDF, ">$pid_file";
+	print PIDF "$$\n";
+	close PIDF;
+}
 
 printf "%s  Starting [kubjas] PID %d at host \"%s\"\n", scalar(localtime), $$, &whoami;
 
@@ -57,10 +116,6 @@ $SIG{CHLD} = sub {
 				my $notify = $job->get_param('notify-success');
 				for (split(/\n/,$notify)) {
 					&send_notify($_, $name, 'success-message');
-				}
-				if ((time() - $seconds) < 1 && $job->get_param('run') eq 'daemon') {
-					printf "%s  Cannot trace daemonized jobs that fork twice after being run. Disable job [%s]\n", scalar(localtime), $name;
-					$job->set_param('interval', 0);
 				}
 			}
 			delete $running{$name};
@@ -187,19 +242,6 @@ sub duplicate_filter {
 	return 0;
 }
 
-
-## STOP DAEMON JOBS ##
-
-sub stop_daemon_jobs {
-	foreach my $job (@jobs) {
-		my $name = $job->get_param('name');
-
-		if ($running{$name} && $job->get_param('run') eq 'daemon') {
-			kill $signo{'TERM'}, $running{$name};
-		}
-	}
-}
-
 ## START JOBS ##
 
 sub start_jobs {
@@ -217,7 +259,6 @@ sub start_jobs {
 
 	foreach my $job (@jobs) {
 		my $name = $job->get_param('name');
-		my $daemon = $job->get_param('run') eq 'daemon' ? 'daemon' : 0;
 
 		next if ($notify && $notify ne $name);
 		next unless (inPeriod(time(), $job->get_param('period')));
@@ -236,7 +277,7 @@ sub start_jobs {
 			unshift @msg, $name;
 		}
 		next if ($notify && lc($interval) ne $msg[1]);
-		next if (!$watch && !$notify && $interval !~ /\d/ && !$daemon);
+		next if (!$watch && !$notify && $interval !~ /\d/);
 		my $seconds = $job->get_param('exec_time');
 		next if ($time && $interval =~ /\d/ && ($time - $seconds) < $interval);
 		next if ($time && $interval =~ /\d/ && ($time - $start_time) < $interval);
@@ -348,7 +389,7 @@ sub whoami {
 
 sub shutdown {
 	print scalar(localtime), "  Shutdown\n";
-	&stop_daemon_jobs;
+	unlink ($pid_file) if ($pid_file);
 	exit;
 }
 
@@ -482,11 +523,11 @@ sub exec_job {
 	if ($cmdline =~ /%/) {
 		$cmdline = &set_cmdline_env($cmdline, @_);
 	}
-	my $run = $job->get_param('run');
 	my $user = $job->get_param('user');
 	my $group = $job->get_param('group');
 	my $ionice = $job->get_param('ionice');
 	my $nice = $job->get_param('nice');
+	my $output = $job->get_param('output');
 	if ($ionice && ! -x '/usr/bin/ionice') {
 		print "WARN: cannot find /usr/bin/ionice\n";
 		$ionice = undef;
@@ -510,11 +551,15 @@ sub exec_job {
 	system ("/usr/bin/renice +10 $$ >/dev/null") if ($nice);
 	chdir '/' or die "Can't chdir to /: $!";
 	open STDIN, '/dev/null' or die "Can't read /dev/null: $!";
-	if ($run eq 'daemon') {
+	if ($output && $output eq 'none' || !$output) {
 		open STDOUT, '>/dev/null' or die "Can't write to /dev/null: $!";
+	} elsif ($output ne 'passthrough') {
+		if ( -w $output || ! -f $output ) {
+			open STDOUT, ">>$output" or die "Can't write to $output: $!";
+		}
 	}
-	setsid or die "Can't start a new session: $!";
 	open STDERR, '>&STDOUT' or die "Can't dup stdout: $!";
+	setsid or die "Can't start a new session: $!";
 	$(=$)=$gid;
 	$<=$>=$uid;
 	{ exec ($cmdline) }; print STDERR "couldn't exec $cmdline: $!";
@@ -545,12 +590,12 @@ sub new {
 		'period' => 'mo {1-12}', # man Time::Period
 		'conflicts' => undef, # other job names \n separated array
 		'depends' => undef, # other job names \n separated array
-		'run' => 'periodic', # or 'daemon'
 		'watch' => undef, # file or direcotry list for inotify
 		'notify-start' => undef, # other-server:job-name | local-job-name
 		'notify-success' => undef, # other-server:job-name | local-job-name
 		'notify-failure' => undef, # other-server:job-name | local-job-name
 		'signal' => undef, # notify signal: HUP, INT, USR2, ...
+		'output' => 'passthrough', # passthrough | none | /file/name
 		'ionice' => 0, # 0 - false, 1 - true
 		'nice' => 0, # 0 - false, 1 - true
 		'exec_time' => 0, # seconds  (unix timestamp)
