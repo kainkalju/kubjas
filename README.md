@@ -48,7 +48,7 @@
 time but at specified intervals. Kubjas also includes <strong>Time::Period</strong> filter.
 You can configure <strong>interval</strong> and <strong>period</strong> combinations that act like crontab.</p>
 <p>Kubjas measures executed job running times and log it when job exits.
-Measurements are in microseconds resolution.</p>
+Measurements are in milliseconds resolution.</p>
 <p>Kubjas configuration is standard INI file format. You can have multiple
 configuration files at same time. Main configuration is <strong>/etc/kubjas.conf</strong>
 and <strong>/etc/kubjas.d/</strong> directory is for additional configurations. Each job can have
@@ -119,9 +119,9 @@ parameters that will be filled with info at execution time.</p>
  cmdline = send_alert.sh %host% %job% %notify%</pre>
 <p>Template name <strong>%host%</strong> will replaced with hostname where notify origins.
 Template name <strong>%job%</strong> will replaced with job-name which sends the notify.
-Template name <strong>%notify</strong> will replaced with notify message which can be
+Template name <strong>%notify%</strong> will replaced with notify message which can be
 <strong>start-message</strong>, <strong>success-message</strong>, <strong>failure-message</strong> or <strong>filename</strong>
-that inotify <strong>watch</strong> discovered <strong>IN_CLOSE_NOWRITE</strong> event.</p>
+that inotify <strong>watch</strong> discovered <strong>IN_CLOSE_WRITE</strong> event.</p>
 </dd>
 <dt><strong><a name="output" class="item">output</a></strong></dt>
 
@@ -230,11 +230,11 @@ combination. Example job will be run only once a day at 0:00 midnight</p>
 <dd>
 <p>Kubjas is monitoring file system events with Linux inotify API if
 you specify list of files and directories to <strong>watch</strong>.</p>
-<p>One job can have many watch parameters. Kubjas monitors <strong>IN_CLOSE_NOWRITE</strong>
+<p>One job can have many watch parameters. Kubjas monitors <strong>IN_CLOSE_WRITE</strong>
 events eg. change of file. Example:</p>
 <pre>
  watch = /tmp</pre>
-<p>Will trigger job start always the /tmp direcotry changes. Only one
+<p>Will trigger job start always the /tmp directory changes. Only one
 job at a time.</p>
 </dd>
 <dt><strong><a name="notify_start_notify_success_notify_failure" class="item">notify-start notify-success notify-failure</a></strong></dt>
@@ -278,9 +278,8 @@ defined at the same configuration file.</p>
 
 <dd>
 <p>This job will only run if depends are met. If specified jobs allready running.
-Example you can run periodic jobs only if daemon job is running.</p>
+Example you can run periodic jobs only if other job is running.</p>
 <pre>
- depends = daemon-job
  depends = other-job</pre>
 <p>You can have multiple <strong>depends</strong> params.</p>
 <p>depends param can be special wildcard value that require all other jobs to
@@ -305,7 +304,6 @@ be running that are defined at the same configuration file.</p>
 jobs if notify event happen.</p>
 <pre>
  [catch-signals]
- run = daemon
  interval = onchange
  watch = /tmp/date.txt
  signal = USR2</pre>

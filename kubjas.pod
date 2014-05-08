@@ -17,7 +17,7 @@ time but at specified intervals. Kubjas also includes B<Time::Period> filter.
 You can configure B<interval> and B<period> combinations that act like crontab.
 
 Kubjas measures executed job running times and log it when job exits.
-Measurements are in microseconds resolution.
+Measurements are in milliseconds resolution.
 
 Kubjas configuration is standard INI file format. You can have multiple
 configuration files at same time. Main configuration is B</etc/kubjas.conf>
@@ -90,9 +90,9 @@ parameters that will be filled with info at execution time.
 
 Template name B<%host%> will replaced with hostname where notify origins.
 Template name B<%job%> will replaced with job-name which sends the notify.
-Template name B<%notify> will replaced with notify message which can be
+Template name B<%notify%> will replaced with notify message which can be
 B<start-message>, B<success-message>, B<failure-message> or B<filename>
-that inotify B<watch> discovered B<IN_CLOSE_NOWRITE> event.
+that inotify B<watch> discovered B<IN_CLOSE_WRITE> event.
 
 =item output
 
@@ -211,12 +211,12 @@ Run jobs as given group. Kubjas resolves group GID.
 Kubjas is monitoring file system events with Linux inotify API if
 you specify list of files and directories to B<watch>.
 
-One job can have many watch parameters. Kubjas monitors B<IN_CLOSE_NOWRITE>
+One job can have many watch parameters. Kubjas monitors B<IN_CLOSE_WRITE>
 events eg. change of file. Example:
 
  watch = /tmp
 
-Will trigger job start always the /tmp direcotry changes. Only one
+Will trigger job start always the /tmp directory changes. Only one
 job at a time.
 
 =item notify-start notify-success notify-failure
@@ -260,9 +260,8 @@ defined at the same configuration file.
 =item depends
 
 This job will only run if depends are met. If specified jobs allready running.
-Example you can run periodic jobs only if daemon job is running.
+Example you can run periodic jobs only if other job is running.
 
- depends = daemon-job
  depends = other-job
 
 You can have multiple B<depends> params.
@@ -288,7 +287,6 @@ Combined with B<interval> special cases you can send UNIX signals to running
 jobs if notify event happen.
 
  [catch-signals]
- run = daemon
  interval = onchange
  watch = /tmp/date.txt
  signal = USR2
