@@ -425,6 +425,13 @@ sub reading_conf {
 
 print scalar(localtime), "  Reading configuration files\n";
 
+if ($log_file) {
+	open LOGF, ">>$log_file";
+	select(STDOUT); $|=1;
+	open STDOUT, '>&LOGF' or die "Can't dup stdout: $!";
+	open STDERR, '>&STDOUT' or die "Can't dup stderr: $!";
+}
+
 my @cfg_files = ( $default_cfg );
 
 opendir(DIR, $config_dir) || die "can't opendir $config_dir: $!";
