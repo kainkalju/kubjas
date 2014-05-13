@@ -31,7 +31,7 @@ her own config file. You can force configuration reload with B<HUP> signal.
 =item example.conf
 
  [*]
- notify-failure = 192.168.1.27:catch-signals
+ notify-failure = 127.0.0.1:send_failure_notify
 
  [date-job]
  cmdline = date +"%H:%M" > /var/tmp/date.txt
@@ -42,8 +42,7 @@ her own config file. You can force configuration reload with B<HUP> signal.
 
  [catch-signals]
  cmdline = /usr/local/bin/catch-signals.pl
- output = none
- interval = failure-message
+ interval = success-message
  signal = USR2
 
  [readfile]
@@ -57,11 +56,16 @@ her own config file. You can force configuration reload with B<HUP> signal.
  [very-shy-job]
  cmdline = /usr/local/bin/shy.sh
  interval = 10-20
- period = wd {1 3 5 7} min {0-29}, wd {2 4 6} min {30-59}
+ period = wday {1 3 5 7} min {0-29}, wday {2 4 6} min {30-59}
  depends = catch-signals
  conflicts = date-job
  nice = 1
  ionice = 1
+
+ [send_failure_notify]
+ cmdline = send_failure_notify.sh %host% %job% %notify%
+ interval = failure-message
+ output = none
 
 =item job-name
 
