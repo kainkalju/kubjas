@@ -18,6 +18,7 @@
 	<li><a href="#synopsis">SYNOPSIS</a></li>
 	<li><a href="#description">DESCRIPTION</a></li>
 	<li><a href="#configuration">CONFIGURATION</a></li>
+	<li><a href="#signals">SIGNALS</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 	<li><a href="#files">FILES</a></li>
 	<li><a href="#author">AUTHOR</a></li>
@@ -316,6 +317,34 @@ jobs if notify event happen.</p>
 <p>
 </p>
 <hr />
+<h1><a name="signals">SIGNALS</a></h1>
+<p>Kubjas handles following signals:</p>
+<dl>
+<dt><strong><a name="hup" class="item">HUP</a></strong></dt>
+
+<dd>
+<p>If you send HUP signal then kubjas reloads configuration. Example: kill -HUP &lt;PID&gt;</p>
+<p>This does not affect running jobs.</p>
+</dd>
+<dt><strong><a name="usr1" class="item">USR1</a></strong></dt>
+
+<dd>
+<p>If you send USR1 signal then kubjas prints active jobs to log. Example: kill -USR1 &lt;PID&gt;</p>
+<p>Wed Jun 25 15:08:05 2014  running (date-job readfile)</p>
+</dd>
+<dt><strong><a name="usr2" class="item">USR2</a></strong></dt>
+
+<dd>
+<p>If you send USR2 signal then kubjas stops schedule new jobs. Example: kill -USR2 &lt;PID&gt;</p>
+<p>When you need server maintenance then it is very handy feature. After you signalled USR2
+you can watch log and wait all jobs to be completed before shutdown or restart without
+breaking any running jobs.</p>
+<p>&lt;PID&gt; == kubjas PID for example 1234</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
 <h1><a name="see_also">SEE ALSO</a></h1>
 <p>Time::Period(3pm)
 <code>inotify(7)</code></p>
@@ -345,7 +374,7 @@ jobs if notify event happen.</p>
 </p>
 <hr />
 <h1><a name="date">DATE</a></h1>
-<p>May 8, 2014</p>
+<p>June 25, 2014</p>
 
 </body>
 
