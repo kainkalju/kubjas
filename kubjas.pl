@@ -16,7 +16,7 @@ use Time::HiRes qw(ualarm gettimeofday);
 use Config;
 use Cwd;
 use strict;
-use vars qw($start_time $last_time @jobs %signo %running %childs %inwatch %known @fp_lifo);
+use vars qw($start_time $last_time @jobs %signo %running %childs %inwatch %known @fp_lifo $no_new_jobs);
 
 my $default_cfg = '/etc/kubjas.conf';
 my $config_dir = '/etc/kubjas.d';
@@ -130,6 +130,14 @@ $SIG{HUP} = \&reading_conf;
 $SIG{TERM} = \&shutdown;
 $SIG{INT} = \&shutdown;
 $SIG{USR1} = sub { printf "%s  running (%s)\n", scalar(localtime), join(" ", keys %running); };
+$SIG{USR2} = sub {
+	$no_new_jobs = $no_new_jobs ? 0 : 1;
+	if ($no_new_jobs) {
+		print scalar(localtime), "  Switching job scheduling OFF\n";
+	} else {
+		print scalar(localtime), "  Switching job scheduling ON\n";
+	}
+};
 
 ## REGISTER SIGNAL NAMES ##
 
@@ -253,6 +261,7 @@ sub start_jobs {
 		push @msg, 'kubjas', &whoami;
 	}
 
+	return if ($no_new_jobs);
 	return if ($time && ($time - $last_time) < 1); # once in a sec.
 	$last_time = $time;
 	my $sort_jobs = 0;

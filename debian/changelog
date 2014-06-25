@@ -1,3 +1,9 @@
+kubjas (1.2) unstable; urgency=low
+
+  * adds USR2 signal
+
+ -- Kain Kalju <kain@flycom.ee>  Wed, 25 Jun 2014 15:19:49 +0300
+
 kubjas (1.1) unstable; urgency=low
 
   * command line options

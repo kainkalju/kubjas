@@ -297,6 +297,36 @@ jobs if notify event happen.
 
 =back
 
+=head1 SIGNALS
+
+Kubjas handles following signals:
+
+=over
+
+=item HUP
+
+If you send HUP signal then kubjas reloads configuration. Example: kill -HUP <PID>
+
+This does not affect running jobs.
+
+=item USR1
+
+If you send USR1 signal then kubjas prints active jobs to log. Example: kill -USR1 <PID>
+
+Wed Jun 25 15:08:05 2014  running (date-job readfile)
+
+=item USR2
+
+If you send USR2 signal then kubjas stops schedule new jobs. Example: kill -USR2 <PID>
+
+When you need server maintenance then it is very handy feature. After you signalled USR2
+you can watch log and wait all jobs to be completed before shutdown or restart without
+breaking any running jobs.
+
+<PID> == kubjas PID for example 1234
+
+=back
+
 =head1 SEE ALSO
 
 Time::Period(3pm)
@@ -320,6 +350,6 @@ inotify(7)
 
 =head1 DATE
 
-May 8, 2014
+June 25, 2014
 
 =cut

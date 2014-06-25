@@ -19,7 +19,7 @@ SENDMAIL=/usr/lib/sendmail
 CONF=/tmp/smtp.conf.$$
 echo "root=postmaster" > $CONF
 echo "mailhub=$SMTP_HOST" >> $CONF
-echo "hostname=fw.flycom.ee" >> $CONF
+echo "hostname=hostname.example.dom" >> $CONF
 
 # temporary message file
 MSGFILE=/tmp/send_failure_notify.msg.$$
