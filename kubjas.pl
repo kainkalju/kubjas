@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# kubjas  Ver 140508
+# kubjas  Ver 141210
 #
 # AUTHOR: Kain Kalju (kain@kalju.com)
 # LICENSE: The "Artistic License" - http://dev.perl.org/licenses/artistic.html
@@ -454,6 +454,14 @@ for (@files) {
 	push @cfg_files, "$config_dir/$_";
 }
 
+# save old execution times
+my (%exec_time,%exec_ms);
+foreach my $job (@jobs) {
+	my $name = $job->get_param('name');
+	$exec_time{$name} = $job->get_param('exec_time');
+	$exec_ms{$name} = $job->get_param('exec_ms');
+}
+
 my %uniq;
 @jobs = ();
 
@@ -487,6 +495,10 @@ for (@cfg_files) {
 
 		my $job = Kubjas::Job->new( name => $_ );
 		my $sec = $_;
+
+		# set previous exec times if exists
+		$job->set_param('exec_time', $exec_time{$_}) if ($exec_time{$_});
+		$job->set_param('exec_ms', $exec_ms{$_}) if ($exec_ms{$_});
 
 		# set user default params
 		while (my($key,$val) = each %default_params) {
